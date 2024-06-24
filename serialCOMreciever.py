@@ -1,20 +1,28 @@
 import serial
 
-# Adjust the serial port name and baud rate as needed
-ser = serial.Serial('COM3', 9600)
-template_data = b''
+def read_fingerprint_template(serial_port='COM6', baudrate=115000, timeout=1000):
+    try:
+        ser = serial.Serial(serial_port, baudrate, timeout=timeout)
+        print(f"Conectado à {serial_port}")
 
-print("Waiting for template data...")
+        template = bytearray()
+        
+        while True:
+            byte = ser.read(1)
+            if byte:
+                template.append(ord(byte))
+                if len(template) == 512:
+                    break
 
-while True:
-    if ser.in_waiting > 0:
-        data = ser.read(ser.in_waiting)
-        template_data += data
-        if data.endswith(b'\n'):  # End of template data
-            break
+        ser.close()
+        
+        with open('fingerprint_template.bin', 'wb') as f:
+            f.write(template)
+        
+        print(f"Template de impressão digital salvo em 'fingerprint_template.bin'")
 
-# Save the template data to a file
-with open('fingerprint_template.dat', 'wb') as file:
-    file.write(template_data)
+    except serial.SerialException as e:
+        print(f"Erro de comunicação: {e}")
 
-print("Template data saved to fingerprint_template.dat")
+if __name__ == "__main__":
+    read_fingerprint_template()
